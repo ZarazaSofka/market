@@ -1,0 +1,41 @@
+version: "3"
+
+services:
+  redis:
+    image: 'redis:latest'
+    container_name: redis
+
+  auth:
+    depends_on:
+      - redis
+    build: auth/
+    container_name: "auth-market"
+    environment:
+      - SPRING_DATA_REDIS_DATABASE=0
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    volumes:
+      - ./auth/build/libs/market-0.0.1.jar:/auth/spring-boot-application.jar
+  web:
+    depends_on:
+      - auth
+    build: app/
+    container_name: "web-market"
+    volumes:
+      - ./app/build/libs/market-0.0.1.jar:/app/spring-boot-application.jar
+  db:
+    image: 'postgres:latest'
+    container_name: "db-market"
+    environment:
+      - 'POSTGRES_DB=market'
+      - 'POSTGRES_PASSWORD=1111'
+      - 'POSTGRES_USER=user'
+
+  proxy:
+    build:
+      dockerfile: ./proxy/Dockerfile
+    ports:
+      - 8080:80
+    depends_on:
+      - web
